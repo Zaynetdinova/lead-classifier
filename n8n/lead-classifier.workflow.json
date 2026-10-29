@@ -1,0 +1,397 @@
+{
+  "name": "lead-classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a85a5625-8963-4fc4-80d4-56cd3f0c9936",
+      "name": "Webhook",
+      "webhookId": "8e23fec1-d4a0-4612-bb0a-374ddf3d9b3a"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=Срочная заявка\n   Имя: {{ $json.name }}\n   Бюджет: {{ $json.budget }}\n   Комнат: {{ $json.rooms }}\n   Резюме: {{ $json.summary }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -32
+      ],
+      "id": "2a98cb67-353b-4095-bde5-13d0924f3e24",
+      "name": "Срочная заявка в Telegram",
+      "webhookId": "e981af88-d865-41ad-bb62-bd7b9d768d11",
+      "credentials": {
+        "telegramApi": {
+          "id": "zL3s7sCDRsk1v5uN",
+          "name": "Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7d803357-44d1-48b9-9297-bf61262e17a3",
+              "leftValue": "={{ $json.urgency }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "4a80907c-9c3b-4833-a279-7449047e5639",
+              "leftValue": "={{ $json.category }}",
+              "rightValue": "spam",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "f38a8f60-9bc8-4258-aafa-b640b5a183ce",
+      "name": "Срочная и не спам?"
+    },
+    {
+      "parameters": {
+        "chatId": "=YOUR_CHAT_ID",
+        "text": "=Не удалось разобрать заявку: API недоступен. Текст заявки: {{ $('Webhook').item.json.body.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        160
+      ],
+      "id": "20124f05-ad61-4423-b6eb-d4b7dd4b3a83",
+      "name": "Текст заявки при сбое",
+      "webhookId": "60b46c1a-5331-44cd-93ab-63e857fa9d5f",
+      "credentials": {
+        "telegramApi": {
+          "id": "zL3s7sCDRsk1v5uN",
+          "name": "Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/classify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.body.text }}"
+            },
+            {
+              "name": "notify",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "93e562dc-ffa2-4e9f-82a0-d74c88e4e40b",
+      "name": "Классификатор",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1DUBtn7Q0F1QfMza",
+          "name": "API_classify"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "Заявка приходит \nна webhook, Claude разбирает её через API, срочные уходят в Telegram. Все разобранные заявки пишутся в Google Sheets. При сбое API текст заявки приходит в Telegram, \nа общий сбой фиксирует отдельный workflow",
+        "height": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -288
+      ],
+      "id": "040816fe-5707-4c2a-b29b-684f8dc5df79",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Классификатор заявок недоступен или вернул ошибку"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        848,
+        160
+      ],
+      "id": "6379fa65-761d-4899-ba34-978d95c62f4e",
+      "name": "Зафиксировать сбой"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        160
+      ],
+      "id": "3e3feaeb-be15-487b-bb3d-51b8b5438c31",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Заявки (классификатор)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "received_at": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+            "name": "={{ $json.name }}",
+            "budget": "={{ $json.budget }}",
+            "rooms": "={{ $json.rooms }}",
+            "category": "={{ $json.category }}",
+            "urgency": "={{ $json.urgency }}",
+            "summary": "={{ $json.summary }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rooms",
+              "displayName": "rooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "urgency",
+              "displayName": "urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        -192
+      ],
+      "id": "ff5d8f07-342a-4da2-9164-64df0f2667a9",
+      "name": "Запись в таблицу",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "NCTeeYo7mtAHQCHS",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Классификатор",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Срочная и не спам?": {
+      "main": [
+        [
+          {
+            "node": "Срочная заявка в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Текст заявки при сбое": {
+      "main": [
+        [
+          {
+            "node": "Зафиксировать сбой",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Классификатор": {
+      "main": [
+        [
+          {
+            "node": "Запись в таблицу",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Срочная и не спам?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Текст заявки при сбое",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запись в таблицу": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "vxG1ZjAzq1TqjjSb",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "e67a5365-81ea-455b-9f78-3c5f56e86ddb",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "RzBxuDKbfSWKqG4t",
+  "tags": []
+}

@@ -1,0 +1,66 @@
+{
+  "name": "error-alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "817e803d-7828-411f-92f7-92561e6bab48",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=Сбой в workflow «{{ $json.workflow.name }}»    \nУзел: {{ $json.execution.lastNodeExecuted }}    \nОшибка: {{ $json.execution.error.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6186893b-19bd-4e9c-b6a5-af84738e0e66",
+      "name": "Send a text message",
+      "webhookId": "ed2fdcb6-ce57-43fa-a9b3-66d7f2236b90",
+      "credentials": {
+        "telegramApi": {
+          "id": "zL3s7sCDRsk1v5uN",
+          "name": "Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "42fdfe97-1fd2-4e7a-80c5-cbd7f1d8cc2c",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "vxG1ZjAzq1TqjjSb",
+  "tags": []
+}
